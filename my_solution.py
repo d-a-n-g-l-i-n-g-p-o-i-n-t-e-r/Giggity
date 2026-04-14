@@ -5,12 +5,12 @@ import re, base64, codecs, unicodedata
 # Normalization helpers
 # =========================
 
-_ZERO_WIDTH = {
-    "\u200b", "\u200c", "\u200d", "\ufeff",
-    "\u2060", "\u2061", "\u2062", "\u2063", "\u2064",
-}
 
 def _normalize(text: str) -> str:
+    _ZERO_WIDTH = {
+    "\u200b", "\u200c", "\u200d", "\ufeff",
+    "\u2060", "\u2061", "\u2062", "\u2063", "\u2064",
+    }
     text = unicodedata.normalize("NFKC", text)
     for ch in _ZERO_WIDTH:
         text = text.replace(ch, "")
@@ -36,11 +36,10 @@ def _looks_like_hex(text: str) -> bool:
 def _decode_candidates(text: str):
     """
     Returns possible decoded variants of the input text.
-    Kept small and cheap for the 100 ms limit.
     """
     out = []
 
-    # Base64 tokens
+    # Base64
     for m in re.findall(r"(?<![A-Za-z0-9+/])[A-Za-z0-9+/]{12,}={0,2}(?![A-Za-z0-9+/])", text):
         try:
             padded = m + "=" * ((4 - len(m) % 4) % 4)
@@ -50,7 +49,7 @@ def _decode_candidates(text: str):
         except Exception:
             pass
 
-    # Hex tokens
+    # Hex
     for m in re.findall(r"(?i)(?<![0-9a-f])(?:[0-9a-f]{2}){6,}(?![0-9a-f])", text):
         try:
             dec = bytes.fromhex(m).decode("utf-8", errors="ignore")
@@ -59,7 +58,7 @@ def _decode_candidates(text: str):
         except Exception:
             pass
 
-    # ROT13 of the whole text
+    # ROT13
     try:
         rot = codecs.decode(text, "rot_13")
         if rot and rot != text:
@@ -130,7 +129,7 @@ _OVERRIDE_PATTERNS = [
 ]
 
 _LEAK_REQUEST_PATTERNS = [
-    r"\b(?:reveal|show|print|dump|leak|expose|output|share|repeat)\b.{0,35}\b(?:system\s+prompt|instructions?|rules?|policy|password|secret|key)\b",
+    r"\b(?:display|reveal|show|print|dump|leak|expose|output|share|repeat)\b.{0,35}\b(?:system\s+prompt|instructions?|rules?|policy|password|secret|key)\b",
     r"\b(?:what is|tell me|give me|send me|show me)\b.{0,35}\b(?:your|the)\b.{0,20}\b(?:system\s+prompt|instructions?|password|secret|key)\b",
     r"\b(?:full|entire|verbatim|raw|exact)\b.{0,20}\b(?:system\s+prompt|prompt|instructions?)\b",
 ]
