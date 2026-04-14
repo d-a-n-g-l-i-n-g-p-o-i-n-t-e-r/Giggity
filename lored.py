@@ -112,7 +112,7 @@ def _contains_any(text: str, items):
     return any(item in text for item in items)
 
 def _regex_any(text: str, patterns):
-    return any(re.search(p, text, flags=re.IGNORECASE | re.DOTALL) for p in patterns)
+    return sum(1 if re.search(p, text, flags=re.IGNORECASE | re.DOTALL) else 0 for p in patterns)
 
 
 # =========================
@@ -180,11 +180,11 @@ def input_hook(user_input: str, config) -> bool:
     risk = 0
 
     # Strong direct attack signatures
-    if _regex_any(text, _OVERRIDE_PATTERNS):
-        risk += 4
+    if (k:=_regex_any(text, _OVERRIDE_PATTERNS)):
+        risk += 4 * k
 
-    if _regex_any(text, _LEAK_REQUEST_PATTERNS):
-        risk += 4
+    if (k:=_regex_any(text, _LEAK_REQUEST_PATTERNS)):
+        risk += 4 * k
 
     # Encoding/obfuscation requests are suspicious only when tied to secrets or instructions
     if _regex_any(text, _ENCODING_PATTERNS):
