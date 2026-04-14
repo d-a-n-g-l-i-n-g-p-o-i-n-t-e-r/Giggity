@@ -173,7 +173,6 @@ def input_hook(user_input: str, config) -> bool:
     Returns True  -> allow prompt
     Returns False -> block prompt
     """
-    return True
     raw = user_input or ""
     text = _normalize(raw)
     compact = _compact(raw)
