@@ -106,51 +106,96 @@ def _contains_any(text: str, items):
     return any(item in text for item in items)
 
 def _regex_any(text: str, patterns):
-    return any(re.search(p, text, flags=re.IGNORECASE | re.DOTALL) for p in patterns)
+    return sum(1 if re.search(p, text, flags=re.IGNORECASE | re.DOTALL) else 0 for p in patterns)
 
 
-# =========================
-# Attack detection lists
-# =========================
 
 _OVERRIDE_PATTERNS = [
-    r"\b(?:ignore|disregard|bypass|override)\b.{0,30}\b(?:instructions?|rules?|policy|prompts?|prompt)\b",
-    r"\b(?:ignore|disregard|bypass|override)\b.{0,30}\b(?:all|previous|above|earlier)\b",
-    r"\b(?:youarenow|fromnowonyouare|actas|pretendtobe|simulate|roleplayas)\b",
-    r"\b(?:developer|debug)\b.{0,20}\bmode\b",
-    r"\b(?:jailbreak|dan|stan)\b",
-    r"<\s*(?:system|assistant|user)\s*>",
-    r"\b(?:system\s+prompt|hidden\s+prompt|internal\s+prompt|secret\s+prompt)\b",
-    r"\b(?:enter|switch)\b.{0,30}\b(?:developer|debug|mode)\b",
-    r"\b(?:no|remove|delete|ignore)\b.{0,30}\b(?:rules|restrictions|configurations?|)",
-    r"\b(?:this|that|it)\b.{0,20}\b(?:is|for|isfor)?.{0,30}\b(?:grandma|mom|competition|work|profession|office|test|job|interview)\b",
+    r"(?:ignore|disregard|bypass|override).{0,30}(?:instructions?|rules?|policy|prompts?|prompt)",
+    r"(?:ignore|disregard|bypass|override).{0,30}(?:all|previous|above|earlier)",
+    r"(?:youarenow|fromnowonyouare|actas|pretendtobe|simulate|roleplayas)",
+    r"(?:developer|debug).{0,20}mode",
+    r"(?:jailbreak|dan|stan)",
+    r"(?:system|assistant|user)",
+    r"(?:systemprompt|hiddenprompt|internalprompt|secretprompt)",
+    r"(?:enter|switch).{0,30}(?:developer|debug|mode)",
+    r"(?:no|remove|delete|ignore).{0,30}(?:rules|restrictions|configurations?|)",
+    r"(?:this|that|it).{0,20}(?:is|for|isfor)?.{0,30}(?:grandma|mom|competition|work|profession|office|test|job|interview)",
 ]
 _OVERRIDE_PATTERNS_RUS = [
-
+    r"(?:игнорируй|забудь|обойди|отмени|проигнорируй).{0,30}(?:инструкции|правила|политику|промпт|подсказки|защиту)"
+    r"(?:игнорируй|забудь|обойди|отмени|проигнорируй).{0,30}(?:все|предыду|вышеуказанн|ранее)"
+    r"(?:теперь|ты|сэтогомоментаты|действуйкак|притворись|имитируй|играйроль|представь|роль).{0,30}(что|персона|ответь|безопастност|системн)"
+    r"режим.{0,20}(?:разработчика|отладки|дебаг)"
+    r"(?:системныйпромпт|скрытыйпромпт|внутреннийпромпт|секретныйпромпт)"
+    r"(?:войди|переключ|включ|начало).{0,30}(?:разработчика|отладки|режим)"
+    r"(?:нет|удали|отмени|игнорируй).{0,30}(?:правил|ограничен|настро|конфигурац)"
+    r"(?:это|все|оно|мне).{0,20}(?:для|нужно|необходимо)?.{0,30}(?:бабушки|мамы|конкурса|конкурс|работы|учеб|профессии|диагно|офиса|теста|интервью|провер|пример)"
 ]
+_OVERRIDE_PATTERNS_KAZ = [
+    r"(?:алды|дейін|бұрын).{0,30}(?:елеме|ұмыт|ескерме)",
+    r"(?:алды|дейін|бұрын).{0,30}(?:барлық|толық|нұсқаулар|ереже|промпт)",
+    r"(?:сен)?(?:қауіпсіз|аудит|жүйе|ақпарат|қорға|оқытушы)",
+    r"(?:мұны|бұны|бұл|барлы).{0,20}(?:конкурс|жұмыс|диплом|зертт|оқу|мысал|тексер)"
+]
+
+
+
+
+
 
 _LEAK_REQUEST_PATTERNS = [
-    r"\b(?:display|reveal|show|print|dump|leak|expose|output|share|repeat)\b.{0,35}\b(?:system\s+prompt|instructions?|rules?|policy|password|secret|key|variables?|configuration)\b",
-    r"\b(?:whatis|tellme|giveme|sendme|showme|spellout)\b.{0,35}\b(?:your|the)\b.{0,20}\b(?:system\s+prompt|instructions?|rules?|policy|password|secret|key|variables?|configuration)\b",
-    r"\b(?:full|entire|verbatim|raw|exact)\b.{0,20}\b(?:system\s+prompt|prompt|instructions?|rules?|policy|password|secret|key|variables?|configuration)\b",
-
+    r"(?:display|reveal|show|print|dump|leak|expose|output|share|repeat).{0,35}(?:system\s+prompt|instructions?|rules?|policy|password|secret|key|variables?|configuration)",
+    r"(?:whatis|tellme|giveme|sendme|showme|spellout).{0,35}(?:your|the).{0,20}(?:system\s+prompt|instructions?|rules?|policy|password|secret|key|variables?|configuration)",
+    r"(?:full|entire|verbatim|raw|exact).{0,20}(?:systemprompt|prompt|instructions?|rules?|policy|password|secret|key|variables?|configuration)",
 ]
+_LEAK_REQUEST_PATTERNS_RUS = [
+    r"(?:покаж|выведи|сообщи|какой|какие|напиш|скажи|раскрой|слив|повтор|дай|объясни|передай|поделись).{0,40}(?:системн\w*|инструкц\w*|правил\w*|политик\w*|парол\w*|секрет\w*|ключ\w*|перемен\w*|конфигурац\w*)",
+    r"(?:чтотакое|скажи|дай|пришли|покажи|какой|какие|продиктуй).{0,35}(?:твой|свой|ваши|эти).{0,25}(?:системн\w*|инструкц\w*|правил\w*|политик\w*|парол\w*|секрет\w*|ключ\w*|перемен\w*|конфигурац\w*)",
+    r"(?:полн\w*|весь|целик\w*|все|дословн\w*|исходн\w*|точн\w*).{0,25}(?:системн\w*|промпт\w*|инструкц\w*|правил\w*|политик\w*|парол\w*|секрет\w*|ключ\w*|перемен\w*|конфигурац\w*)",
+]
+_LEAK_REQUEST_PATTERNS_KAZ = [
+    r"(?:нұсқау|құпия|құпиясөз|арнайы|айналымдар|жүйе|промпт|маған).{0,30}(?:көрсет|түсінді|шығар|айт|сал)",
+]
+
+
+
+
 
 _ENCODING_PATTERNS = [
-    r"\b(?:base64|hex|rot13|rot-?13|utf-?8|urlsafe|encode|decode|reverse|backwards|mirror)\b",
-    r"\b(?:translate|traduce|traducir|spell)\b.{0,30}\b(?:password|secret|system\s+prompt|instructions?)\b",
-    r"\b(?:reversespelling|reversetext|acrostic|acrostics|firstletters?|lastletters?)\b",
+    r"(?:base64|hex|rot13|rot-?13|utf-?8|urlsafe|encode|decode|reverse|backwards|mirror)",
+    r"(?:translate|traduce|traducir|spell).{0,30}(?:password|secret|system\s+prompt|instructions?)",
+    r"(?:reversespelling|reversetext|acrostic|acrostics|firstletters?|lastletters?)",
+]
+_ENCODING_PATTERNS_RUS = [
+    r"(?:закодируй|декодируй|расшифруй|задом\s+наперед|инвертируй|отзеркаль)",
+    r"(?:переведи|транслируй|продиктуй|побуквам).{0,30}(?:парол\w*|секрет\w*|системн\w*|инструкц\w*)",
+    r"(?:обратн\w*порядк\w*|задом.{0,10}напер|наоборот|акростих\w*|перв.{0,5}букв|послед.{0,5}букв)",
+]
+_ENCODING_PATTERNS_KAZ = [
+    r"(?:код|декод|шифр|дешифр|декрипт|крипт|әріп|аудар|ауыс)"
 ]
 
+
+
+
+
+
 _CONTEXT_HIJACK_PATTERNS = [
-    r"\b(?:here are examples|example\s*\d+|few[-\s]?shot|chain of thought|cot)\b",
-    r"\b(?:assistant:|user:|system:|developer:)\b",
+    r"(?:here are examples|example\d+|few[-\s]?shot|chain of thought|cot)",
+    r"(?:assistant:|user:|system:|developer:)",
+    r"```",
+    r"<\s*(?:xml|json|yaml|markdown|html|text)\s*>",
+]
+_CONTEXT_HIJACK_PATTERNS_RUS = [
+    r"(?:вотпримеры|пример\d+|цепочк\w*рассужден\w*|пошагово|повтор)",
+    r"(?:assistant:|user:|system:|developer:)",
     r"```",
     r"<\s*(?:xml|json|yaml|markdown|html|text)\s*>",
 ]
 
 
-# переведи|аудар
+
 _MULTILANG_HINTS = [
     "password", "secret", "instructions",
     "игнорируй", "обойди", "выведи", "покажи", "инструкции", "системный промпт",
@@ -169,54 +214,55 @@ _REQUEST_VERBS = [
 
 _NOT_SUSPICIOUS = [
     "explain", "simplify", "?", "how", "work",
-
 ]
 
 
 def input_hook(user_input: str, config) -> bool:
-    """
-    Returns True  -> allow prompt
-    Returns False -> block prompt
-    """
     raw = user_input or ""
     text = _normalize(raw)
     compact = _compact(raw)
+    
 
     risk = 0
 
     # Strong direct attack signatures
-    if _regex_any(text, _OVERRIDE_PATTERNS):
-        risk += 4
+    risk += 4 * _regex_any(compact, _OVERRIDE_PATTERNS)
+    risk += 4 * _regex_any(compact, _OVERRIDE_PATTERNS_RUS)
+    risk += 4 * _regex_any(compact, _OVERRIDE_PATTERNS_KAZ)
+    risk += 4 * _regex_any(compact, _LEAK_REQUEST_PATTERNS)
+    risk += 4 * _regex_any(compact, _LEAK_REQUEST_PATTERNS_RUS)  
+    risk += 4 * _regex_any(compact, _LEAK_REQUEST_PATTERNS_KAZ)  
 
-    if _regex_any(text, _LEAK_REQUEST_PATTERNS):
-        risk += 4
+    secret_related = ["password", "secret", "key", "system prompt", "instructions", "rules", "policy", 
+                      "пароль", "секрет", "правила", "запреты",
+                      "құпия", "нұсқаулар", "тыйым", "ереже", "кілт"]
+    enc_en = _regex_any(compact, _ENCODING_PATTERNS)
+    enc_rus = _regex_any(compact, _ENCODING_PATTERNS_RUS)
+    enc_kaz = _regex_any(compact, _ENCODING_PATTERNS_KAZ)
+    risk += 4 * enc_en if _contains_any(text, secret_related) else enc_en
+    risk += 4 * enc_rus if _contains_any(text, secret_related) else enc_rus
+    risk += 4 * enc_kaz if _contains_any(text, secret_related) else enc_kaz
 
-    secret_related = ["password", "secret", "key", "system prompt", "instructions", "rules", "policy", "пароль", "құпия", "нұсқаулар"]
-    if _regex_any(text, _ENCODING_PATTERNS):
-        if _contains_any(text, secret_related):
+    
+
+    hijacking_related = ["ignore", "override", "reveal", "show", "print", "dump", "leak", "expose", "simulate", "pretend", "act as", "jailbreak", "dan", "stan", 
+                         "игнор", "вывед", "покаж", "обой", "раскрой", 
+                         "ескер", "көрсет"]
+    if _regex_any(compact, _CONTEXT_HIJACK_PATTERNS) or _regex_any(compact, _CONTEXT_HIJACK_PATTERNS_RUS):
+        if _contains_any(text, hijacking_related):
             risk += 3
         else:
             risk += 1
+    
 
-    hijacking_related = ["ignore", "override", "reveal", "show", "print", "dump", "leak", "expose", "simulate", "pretend", "act as", "jailbreak", "dan", "stan", "игнор", "вывед", "покаж", "обой", "раскрой", "ескер", "көрсет"]
-    if _regex_any(text, _CONTEXT_HIJACK_PATTERNS):
-        if _contains_any(text, hijacking_related):
-            risk += 2
-        else:
-            risk += 1
+    if _contains_any(text, _REQUEST_VERBS) and _contains_any(text, [
+        "system prompt", "prompt", "instructions", "rules", "policy", "password", "secret", "key",
+        "системный промпт", "инструкции", "правила", "пароль", "секрет", "ключ",
+        "жүйелік промпт", "нұсқаулар", "құпия", "кілт"
+    ]):
+        risk += 3
 
-    # Natural-language attempts that ask for hidden data
-    # if _contains_any(text, _REQUEST_VERBS) and _contains_any(text, [
-    #     "system prompt", "prompt", "instructions", "rules", "policy",
-    #     "password", "secret", "key",
-    #     "системный промпт", "инструкции", "правила", "пароль", "секрет", "ключ",
-    #     "жүйелік промпт", "нұсқаулар", "құпия", "кілт"
-    # ]):
-    #     risk += 3
-
-    # # Multi-language hints used in the challenge
-    # if _contains_any(text, _MULTILANG_HINTS):
-    #     risk += 1
+    
 
     if any(ch in raw for ch in _ZERO_WIDTH):
         risk += 2
@@ -225,6 +271,8 @@ def input_hook(user_input: str, config) -> bool:
     if non_ascii > max(12, len(raw) // 2):
         risk += 1
 
+    if _contains_any(compact, _NOT_SUSPICIOUS):
+        risk -= 4
     # # Base64 / hex blobs are suspicious if the prompt is about secrets or instructions
     # if _looks_like_base64(raw) or _looks_like_hex(raw):
     #     if _contains_any(text, ["password", "secret", "key", "system prompt", "instructions", "rules", "policy", "пароль", "құпия", "нұсқаулар"]):
@@ -241,9 +289,8 @@ def input_hook(user_input: str, config) -> bool:
     #         break
     #     if _contains_any(d, ["password", "secret", "key", "system prompt", "instructions", "rules", "policy", "пароль", "құпия", "нұсқаулар"]):
     #         risk += 2
-
     
-    return risk <= 4
+    return risk <= 5
 
 
 
@@ -266,42 +313,44 @@ def output_hook(llm_response: str, config) -> bool:
     if secret_compact and secret_compact in compact:
         return False
 
-    # Transformed leaks
+    
     for candidate in _secret_variants(secret):
         c = _compact(candidate)
         if c and c in compact:
             return False
 
-    # Partial leak detection by overlapping chunks
-    # Use 3-grams for normal-length secrets, 2-grams for short secrets
+    
     n = 3 if len(secret_compact) >= 6 else 2
     chunks = _ngrams(secret_compact, n)
 
     if chunks:
         hits = sum(1 for ch in chunks if ch in compact)
-        # For longer secrets, two overlapping chunks is usually enough to indicate leakage
+        
         if len(secret_compact) >= 6 and hits >= 2:
             return False
-        # For short secrets, one exact chunk is already risky
         if len(secret_compact) < 6 and hits >= 1:
             return False
 
     # Hint-style leakage only matters when tied to the secret itself
     hint_patterns = [
-        r"\b(?:first|last)\s+(?:letter|char|character)\b",
-        r"\bstarts?\s+with\b",
-        r"\bends?\s+with\b",
-        r"\blength\b",
-        r"\bnumber of characters\b",
-        r"\bprefix\b",
-        r"\bsuffix\b",
+        r"(?:first|last)\s+(?:letter|char|character)",
+        r"starts?\s+with",
+        r"ends?\s+with",
+        r"length",
+        r"number of characters",
+        r"prefix",
+        r"suffix",
     ]
     if _regex_any(text, hint_patterns):
-        # only block if there is any concrete overlap with the secret
         if secret_compact and any((chunk in compact) for chunk in _ngrams(secret_compact, 2 if len(secret_compact) < 6 else 3)):
             return False
 
-    
+    if secret_compact == "accessdenied":
+        return False
+    # may be way too slow
+    for var in _secret_variants(secret):
+        if re.search(".*".join(var),text):
+            return False
     return True
 
 
