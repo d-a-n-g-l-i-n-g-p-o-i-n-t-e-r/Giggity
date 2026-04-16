@@ -296,18 +296,17 @@ def input_hook(user_input: str, config) -> bool:
 
 
 def output_hook(llm_response: str, config) -> bool:
-    raw = llm_response or ""
-    text = _normalize(raw)
-    compact = _compact(raw)
+    
+    text = _normalize(llm_response)
+    compact = _compact(llm_response)
 
-    secret = getattr(config, "password", "")
+    secret = getattr(config, "password")
     secret_norm = _normalize(secret)
     secret_compact = _compact(secret)
 
     if not secret:
         return True
 
-    # Direct leak
     if secret_norm and secret_norm in text:
         return False
     if secret_compact and secret_compact in compact:
@@ -320,30 +319,30 @@ def output_hook(llm_response: str, config) -> bool:
             return False
 
     
-    n = 3 if len(secret_compact) >= 6 else 2
-    chunks = _ngrams(secret_compact, n)
+    # n = 3 if len(secret_compact) >= 6 else 2
+    # chunks = _ngrams(secret_compact, n)
 
-    if chunks:
-        hits = sum(1 for ch in chunks if ch in compact)
+    # if chunks:
+    #     hits = sum(1 for ch in chunks if ch in compact)
         
-        if len(secret_compact) >= 6 and hits >= 2:
-            return False
-        if len(secret_compact) < 6 and hits >= 1:
-            return False
+    #     if len(secret_compact) >= 6 and hits >= 2:
+    #         return False
+    #     if len(secret_compact) < 6 and hits >= 1:
+    #         return False
 
-    # Hint-style leakage only matters when tied to the secret itself
-    hint_patterns = [
-        r"(?:first|last)\s+(?:letter|char|character)",
-        r"starts?\s+with",
-        r"ends?\s+with",
-        r"length",
-        r"number of characters",
-        r"prefix",
-        r"suffix",
-    ]
-    if _regex_any(text, hint_patterns):
-        if secret_compact and any((chunk in compact) for chunk in _ngrams(secret_compact, 2 if len(secret_compact) < 6 else 3)):
-            return False
+    # # Hint-style leakage only matters when tied to the secret itself
+    # hint_patterns = [
+    #     r"(?:first|last)\s+(?:letter|char|character)",
+    #     r"starts?\s+with",
+    #     r"ends?\s+with",
+    #     r"length",
+    #     r"number of characters",
+    #     r"prefix",
+    #     r"suffix",
+    # ]
+    # if _regex_any(text, hint_patterns):
+    #     if secret_compact and any((chunk in compact) for chunk in _ngrams(secret_compact, 2 if len(secret_compact) < 6 else 3)):
+    #         return False
 
     if secret_compact == "accessdenied":
         return False
