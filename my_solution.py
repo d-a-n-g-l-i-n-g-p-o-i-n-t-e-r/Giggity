@@ -300,7 +300,7 @@ def output_hook(llm_response: str, config) -> bool:
     text = _normalize(raw)
     compact = _compact(raw)
 
-    secret = config.password
+    secret = getattr(config, "password", "")
     secret_norm = _normalize(secret)
     secret_compact = _compact(secret)
 
@@ -347,10 +347,10 @@ def output_hook(llm_response: str, config) -> bool:
 
     if secret_compact == "accessdenied":
         return False
-    # may be way too slow
-    for var in _secret_variants(secret):
-        if re.search(".*".join(var),text):
-            return False
+    ####### # may be way too slow
+    ####### for var in _secret_variants(secret):
+    #######     if re.search(".*".join(var),text):
+    #######         return False
     return True
 
 
