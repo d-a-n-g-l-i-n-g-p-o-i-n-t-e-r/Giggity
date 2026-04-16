@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
 
-read -p "Enter file to run or leave empty:" file
+read -p "Enter file to run or leave empty(default my_solution.py):" file
 file="${file:-my_solution.py}"
 
-read -p "Enter API Key or leave empty" api_key 
+read -p "Enter API Key or leave empty(no default): " api_key 
 
 echo ./"$file":/app/solution.py 
 docker run -v ./"$file":/app/solution.py \
